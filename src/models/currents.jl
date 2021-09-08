@@ -39,7 +39,7 @@ end
 
 function calculate_I_p(v_cp, v_p, p)
     @unpack c_p = p
-    I_p = 1e9 * c_p * dv_p(v_cp, v_p, p)
+    I_p = 1e9 * c_p * calculate_d_v_p(v_cp, v_p, p)
 end
 
 
