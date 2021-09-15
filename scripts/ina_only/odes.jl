@@ -73,7 +73,7 @@ function change_step_v1!(integrator)
     t = integrator.t
     v_c = find_step(t)
     integrator.p["v_c"] = v_c
-    set_proposed_dt!(integrator, 1e-7)
+    set_proposed_dt!(integrator, 1e-9)
     nothing
 end
 

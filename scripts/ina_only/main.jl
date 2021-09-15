@@ -48,6 +48,24 @@ mask_log["α"] = Bool(0)
 mask_log["c"] = Bool(1)
 
 
+bounds = []
+
+for key ∈ p_keys_opt
+    if key == "α"
+        append!(bounds, [(-5., 0.)])
+        continue
+    end
+    idx = findfirst(legend_subset.name .== key)
+    lb, ub = legend_subset.bound_1[idx], legend_subset.bound_2[idx]
+    b = (lb, ub)
+    if mask_log[key]
+        b = map(x -> log.(x), b)
+    end
+    append!(bounds, [b])
+end
+
+bounds = Vector{Tuple{Float64, Float64}}(bounds)
+
 
 ## 
 
@@ -55,7 +73,10 @@ x₀ = [mask_log[k] ? log.(p_dict[k]) : p_dict[k] for k in p_keys_opt]
 p_kwargs = (; p_keys_opt, p_dict, mask_log, kwargs_loss_robust)
 p = prepare_p(x₀, p_kwargs...)
 
-rhs = ODEFunction(compute_rates!, syms=[:v_comp, :v_p, :v_m, :m, :h, :j, :I_out])
+# rhs = ODEFunction(compute_rates!, syms=[:v_comp, :v_p, :v_m, :m, :h, :j, :I_out])
+rhs = ODEFunction((du, u, p, t) -> compute_rates!(du, u, p, t; 1e-6),
+                  syms=[:v_comp, :v_p, :v_m, :m, :h, :j, :I_out]);
+
 cb_step_v1  = PresetTimeCallback(protocol.t, change_step_v1!, save_positions=(false, false))
 prob = ODEProblem(rhs, u₀, tspan, p, callback=cb_step_v1)
 solve_kwargs_default = (; reltol, abstol, solver, saveat, dt)
@@ -65,6 +86,7 @@ solve_kwargs_default = (; reltol, abstol, solver, saveat, dt)
 
 sol = solve_model(prob, (;), solve_kwargs_default);
 data_true = similar(sol[:I_out])
+data_buffer = similar(data_true)
 
-calculate_data_segmented!(data_true, p, prob, solve_kwargs_default)
-calculate_loss_segments!(data_true, data_true, x₀, p_kwargs, prob, solve_kwargs_default)
+calculate_data_segments!(data_true, p, prob, solve_kwargs_default)
+calculate_loss_segments!(data_buffer, data_true, x₀, p_kwargs, prob, solve_kwargs_default)

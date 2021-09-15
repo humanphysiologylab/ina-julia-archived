@@ -112,7 +112,7 @@ function calculate_data_segments_serial(data_segmented, p, prob, solve_kwargs_de
 end
 
 
-function calculate_data_segmented!(data_segmented, p, prob, solve_kwargs_default, n_steps=20)::Symbol
+function calculate_data_segments!(data_segmented, p, prob, solve_kwargs_default, n_steps=20)::Symbol
 
     u∞ = similar(prob.u0)
     retcode = calculate_u∞!(u∞, p, prob, solve_kwargs_default)
@@ -132,7 +132,7 @@ function calculate_data_segmented!(data_segmented, p, prob, solve_kwargs_default
 end
 
 
-function calculate_loss_segments!(data_segmented, data_true,
+function calculate_loss_segments!(data_buffer, data_true,
                                  x, p_kwargs, prob, solve_kwargs_default, n_steps=20)::Float64
 
     p = prepare_p(x, p_kwargs...)
@@ -141,10 +141,10 @@ function calculate_loss_segments!(data_segmented, data_true,
         return Inf
     end    
 
-    retcode = calculate_data_segmented!(data_segmented, p, prob, solve_kwargs_default, n_steps)
+    retcode = calculate_data_segments!(data_buffer, p, prob, solve_kwargs_default, n_steps)
 
     if retcode == :Success
-        residuals = data_segmented - data_true
+        residuals = data_buffer - data_true
         @unpack c, α = p
         loss = calculate_loss_robust.(residuals, α=α, c=c)
         loss = mean(loss)
